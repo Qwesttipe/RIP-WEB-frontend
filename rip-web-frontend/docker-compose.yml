@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  app:
+    container_name: rip-web-frontend
+    build:
+      context: .
+      target: development
+    # НЕ используйте volumes или используйте ограниченные
+    volumes:
+      - ./src:/app/src  # только если нужна горячая перезагрузка
+    ports:
+      - "3000:3000"
+    environment:
+      - WDS_SOCKET_PORT=0  # для работы Webpack Dev Server
+      - CHOKIDAR_USEPOLLING=true
+    command: npm run dev

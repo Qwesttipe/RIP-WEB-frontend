@@ -1,0 +1,74 @@
+import React, { useState } from 'react';
+import { Navbar, Dropdown } from 'react-bootstrap';
+import { Link, useNavigate } from 'react-router-dom';
+
+const CustomNavbar: React.FC = () => {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const navigate = useNavigate();
+
+  const handleCatalogClick = () => {
+    navigate('/loads');
+    setShowDropdown(false);
+  };
+
+  return (
+    <Navbar bg="dark" variant="dark" expand="lg" className="custom-navbar">
+      <div className="navbar-container">
+        <Navbar.Brand as={Link} to="/" className="navbar-brand-with-logo">
+          <img 
+            src="/images/mock/logo.png" 
+            alt="Рассчёт нагрузки на сервер" 
+            className="navbar-logo"
+          />
+          <span className="navbar-brand-text">Расчёт нагрузки на сервер</span>
+        </Navbar.Brand>
+        
+        {/* Навигационное меню с гамбургер-иконкой */}
+        <div className="navbar-nav-container">
+          <Dropdown 
+            show={showDropdown} 
+            onToggle={(isOpen) => setShowDropdown(isOpen)}
+            className="navbar-dropdown"
+          >
+            <Dropdown.Toggle as={CustomToggle} id="navbar-dropdown">
+              {/* Гамбургер иконка */}
+              <div className="hamburger-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </Dropdown.Toggle>
+
+            <Dropdown.Menu className="navbar-dropdown-menu">
+              <Dropdown.Item 
+                onClick={handleCatalogClick}
+                className="navbar-dropdown-item"
+              >
+                Каталог нагрузок
+              </Dropdown.Item>
+              {/* Можно добавить другие пункты меню позже */}
+            </Dropdown.Menu>
+          </Dropdown>
+        </div>
+      </div>
+    </Navbar>
+  );
+};
+
+// Кастомный компонент для кнопки Dropdown.Toggle
+const CustomToggle = React.forwardRef<HTMLDivElement, any>(
+  ({ children, onClick }, ref) => (
+    <div
+      ref={ref}
+      onClick={(e) => {
+        e.preventDefault();
+        onClick(e);
+      }}
+      className="navbar-dropdown-toggle"
+    >
+      {children}
+    </div>
+  )
+);
+
+export default CustomNavbar;
