@@ -1,0 +1,206 @@
+import React, { useState, useEffect } from 'react';
+import { Navbar, Nav, Dropdown } from 'react-bootstrap';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../hooks/redux';
+import { logoutUser } from '../slices/authSlice';
+import { useCart } from '../hooks/useCart';
+import { usePredictions } from '../hooks/usePrediction';
+import logo from '/images/mock/logo.png';
+
+const CustomNavbar: React.FC = () => {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  //const { itemCount } = useAppSelector((state) => state.cart);
+  const { predictions, loadUserPredictions } = usePredictions();
+  const { syncCartWithApi } = useCart();
+
+  // ИСПРАВЛЕНО: Используем is_moderator вместо role
+  const isModerator = user?.is_moderator === true;
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      syncCartWithApi();
+      if (!isModerator) {
+        loadUserPredictions();
+      }
+    }
+  }, [isAuthenticated, isModerator, syncCartWithApi, loadUserPredictions]);
+
+  const draftPrediction = predictions.find(prediction => prediction.status === 'черновик');
+
+  const handleLogoutClick = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const handleCartClick = () => {
+    if (isAuthenticated && !isModerator) {
+      if (draftPrediction) {
+        navigate(`/predictions/${draftPrediction.id}`);
+      } else {
+        navigate('/predictions');
+      }
+    } else {
+      navigate('/login');
+    }
+  };
+
+  return (
+    <Navbar bg="dark" variant="dark" expand="lg" className="custom-navbar">
+      <div className="navbar-container">
+        <Navbar.Brand as={Link} to="/" className="navbar-brand-with-logo">
+          <img 
+            src={logo} 
+            alt="ПНнС" 
+            className="navbar-logo"
+          />
+          <span className="navbar-brand-text">Прогноз нагрузки на сервер</span>
+        </Navbar.Brand>
+        
+        {/* Desktop Navigation */}
+        <Nav className="d-none d-lg-flex me-auto">
+          <Nav.Link as={Link} to="/loads" className="nav-link-custom">
+            Каталог нагрузок
+          </Nav.Link>
+          {isAuthenticated && (
+            <Nav.Link as={Link} to="/predictions" className="nav-link-custom">
+              {/* ИСПРАВЛЕНО: Для модератора "Все заявки", для обычного пользователя "Мои заявки" */}
+              {isModerator ? 'Все заявки' : 'Мои заявки'}
+            </Nav.Link>
+          )}
+        </Nav>
+
+        <div className="navbar-nav-container">
+          {/* Desktop User Menu */}
+          <div className="d-none d-lg-flex align-items-center">
+            {isAuthenticated ? (
+              <Dropdown align="end">
+                <Dropdown.Toggle variant="dark" id="user-dropdown" className="user-dropdown-toggle">
+                  {user?.login || 'Профиль'}
+                  {isModerator && ' (Модератор)'}
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="navbar-dropdown-menu">
+                  <Dropdown.Item as={Link} to="/profile" className="navbar-dropdown-item">
+                    Профиль
+                  </Dropdown.Item>
+                  <Dropdown.Divider />
+                  <Dropdown.Item onClick={handleLogoutClick} className="navbar-dropdown-item">
+                    Выйти
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+            ) : (
+              <div className="d-flex gap-2">
+                <Nav.Link as={Link} to="/login" className="nav-link-custom">
+                  Войти
+                </Nav.Link>
+                <Nav.Link as={Link} to="/register" className="nav-link-custom">
+                  Регистрация
+                </Nav.Link>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Burger Menu */}
+          <Dropdown 
+            show={showDropdown} 
+            onToggle={(isOpen) => setShowDropdown(isOpen)}
+            className="d-lg-none navbar-dropdown"
+          >
+            <Dropdown.Toggle as={CustomToggle} id="navbar-dropdown">
+              <div className="hamburger-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </Dropdown.Toggle>
+
+            <Dropdown.Menu className="navbar-dropdown-menu">
+              <Dropdown.Item 
+                as={Link}
+                to="/loads"
+                className="navbar-dropdown-item"
+                onClick={() => setShowDropdown(false)}
+              >
+                Каталог нагрузок
+              </Dropdown.Item>
+
+              {isAuthenticated ? (
+                <>
+                  <Dropdown.Item 
+                    as={Link}
+                    to="/predictions"
+                    className="navbar-dropdown-item"
+                    onClick={() => setShowDropdown(false)}
+                  >
+                    {/* ИСПРАВЛЕНО: Для модератора "Все заявки", для обычного пользователя "Мои заявки" */}
+                    {isModerator ? 'Все заявки' : 'Мои заявки'}
+                  </Dropdown.Item>
+                  <Dropdown.Item 
+                    as={Link}
+                    to="/profile"
+                    className="navbar-dropdown-item"
+                    onClick={() => setShowDropdown(false)}
+                  >
+                    {user?.login || 'Профиль'}
+                    {isModerator && ' (Модератор)'}
+                  </Dropdown.Item>
+                  <Dropdown.Divider />
+                  <Dropdown.Item 
+                    onClick={handleLogoutClick}
+                    className="navbar-dropdown-item"
+                  >
+                    Выйти
+                  </Dropdown.Item>
+                </>
+              ) : (
+                <>
+                  <Dropdown.Item 
+                    as={Link}
+                    to="/login"
+                    className="navbar-dropdown-item"
+                    onClick={() => setShowDropdown(false)}
+                  >
+                    Войти
+                  </Dropdown.Item>
+                  <Dropdown.Item 
+                    as={Link}
+                    to="/register"
+                    className="navbar-dropdown-item"
+                    onClick={() => setShowDropdown(false)}
+                  >
+                    Регистрация
+                  </Dropdown.Item>
+                </>
+              )}
+            </Dropdown.Menu>
+          </Dropdown>
+        </div>
+      </div>
+    </Navbar>
+  );
+};
+
+const CustomToggle = React.forwardRef<HTMLDivElement, any>(
+  ({ children, onClick }, ref) => (
+    <div
+      ref={ref}
+      onClick={(e) => {
+        e.preventDefault();
+        onClick(e);
+      }}
+      className="navbar-dropdown-toggle"
+    >
+      {children}
+    </div>
+  )
+);
+
+export default CustomNavbar;
